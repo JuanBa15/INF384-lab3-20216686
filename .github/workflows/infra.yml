@@ -70,6 +70,11 @@ jobs:
           echo "::error::El job 'politicas' no esta implementado."
           exit 1
 
+      #- checkout
+      #- análisis IaC
+      #- bloquear HIGH/CRITICAL
+      #- respetar excepciones válidas
+
   # TODO
   # Calcular el plan, guardarlo en disco y exportarlo a tfplan.json.
   # El plan que se aplica despues es el guardado aca, no uno recalculado.
@@ -106,6 +111,20 @@ jobs:
           echo "::error::El job 'plan' no esta implementado."
           exit 1
 
+      #- checkout
+      #- terraform init
+
+      #- terraform plan -out=tfplan
+
+      #- terraform show -json tfplan > tfplan.json
+
+      #- publicar plan legible en PR
+
+      #- revisar tfplan.json
+      #- bloquear destrucciones no autorizadas
+
+      #- guardar tfplan
+
   # TODO
   # Aplicar el plan que produjo el job anterior, sin recalcularlo.
   # Corre solo desde la rama principal y solo si la compuerta del plan paso.
@@ -120,3 +139,9 @@ jobs:
         run: |
           echo "::error::El job 'aplicar' no esta implementado."
           exit 1
+
+      #- descargar tfplan
+
+      #- terraform init
+
+      #- terraform apply tfplan
