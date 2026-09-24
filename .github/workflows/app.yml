@@ -73,12 +73,21 @@ jobs:
   #
   # Sustituir el paso centinela por la implementacion.
   calidad:
+    # needs: pruebas
     runs-on: ubuntu-latest
     steps:
       - name: Sin implementar
         run: |
           echo "::error::El job 'calidad' no esta implementado."
           exit 1
+      # - uses: actions/checkout@v4
+      #   with: 
+      #     fetch-depth: 0
+
+      # descargar artifact "cobertura"
+
+      # ejecutar análisis SonarCloud
+      # IMPORTANTE: debe informar, no bloquear
 
   # TODO
   # Buscar credenciales escritas en el codigo y en el historial del repositorio.
@@ -99,6 +108,13 @@ jobs:
         run: |
           echo "::error::El job 'secretos' no esta implementado."
           exit 1
+
+      # - uses: actions/checkout@v4
+      #    with:
+      #      fetch-depth: 0
+
+      # ejecutar detector de secretos
+      # cualquier hallazgo BLOQUEA
 
   # TODO
   # Contrastar el arbol de dependencias declarado en package-lock.json contra
@@ -121,6 +137,11 @@ jobs:
           echo "::error::El job 'dependencias' no esta implementado."
           exit 1
 
+      # - uses: actions/checkout@v4
+
+      # analizar package-lock.json completo
+      # hallazgos visibles, pero NO bloquear
+
   # TODO
   # Buscar patrones explotables en el codigo fuente.
   #
@@ -135,6 +156,11 @@ jobs:
         run: |
           echo "::error::El job 'estatico' no esta implementado."
           exit 1
+
+      # - uses: actions/checkout@v4
+
+      # análisis estático del código
+      # hallazgos visibles, pero NO bloquear
 
   # TODO
   # Construir la imagen de la aplicacion y publicarla en el registro privado.
@@ -168,12 +194,26 @@ jobs:
   #
   # Sustituir el paso centinela por la implementacion.
   publicar:
+    # needs: [calidad, secretos, dependencias, estatico]
+    # if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # outputs:
+    #   digest: # resultado que luego usará desplegar
     steps:
       - name: Sin implementar
         run: |
           echo "::error::El job 'publicar' no esta implementado."
           exit 1
+
+      # - uses: actions/checkout@v4
+
+      # credenciales AWS
+      # login ECR
+      # docker build
+      # tag
+      # push
+      # obtener digest
+      # exponer digest como output
 
   # Este job viene completo y no se modifica.
   # Las estrategias de despliegue y la verificacion posterior son contenido
