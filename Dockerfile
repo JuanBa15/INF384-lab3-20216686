@@ -5,25 +5,21 @@
 # defecto 1
 FROM public.ecr.aws/lambda/nodejs:20 AS build
 
-WORKDIR ${LAMBDA_TASK_ROOT}
+WORKDIR /build
 
 # defecto 2
 COPY package.json package-lock.json ./
 
+# defecto 3
 RUN npm ci
 
 COPY src ./src
 
-# defecto 3
-RUN npm run build
-
 # defecto 4
-FROM public.ecr.aws/lambda/nodejs:20 AS runtime
+# No se declaran credenciales dentro de la imagen.
 
 # defecto 5
-COPY --from=build ${LAMBDA_TASK_ROOT}/dist/handler.js ${LAMBDA_TASK_ROOT}/handler.js
-
-CMD ["handler.handler"]
+# No se instalan herramientas del sistema en la etapa final.
 
 ### NO TOCAR DE ACA EN ADELANTE, CONSIDEREN QUE EL WORKDIR DEBE SER /build
 RUN npx esbuild src/handler.js \
