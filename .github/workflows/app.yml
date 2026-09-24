@@ -30,6 +30,9 @@ on:
       - 'Dockerfile'
   workflow_dispatch:
 
+#env:
+#  APLICACION: inf384-lab3
+
 jobs:
 
   pruebas:
@@ -80,14 +83,29 @@ jobs:
         run: |
           echo "::error::El job 'calidad' no esta implementado."
           exit 1
-      # - uses: actions/checkout@v4
-      #   with: 
-      #     fetch-depth: 0
+          
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
+      #  with:
+      #    fetch-depth: 0
 
-      # descargar artifact "cobertura"
+      ## Recupera el reporte generado por el job pruebas.
+      #- name: Descargar cobertura
+      #  uses: actions/download-artifact@v4
+      #  with:
+      #    name: cobertura
+      #    path: coverage
 
-      # ejecutar análisis SonarCloud
-      # IMPORTANTE: debe informar, no bloquear
+      ## Publica el analisis y la cobertura en SonarQube Cloud.
+      #- name: Analisis de calidad
+      #  uses: SonarSource/sonarqube-scan-action@v8
+      #  env:
+      #    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #    SONAR_HOST_URL: https://sonarcloud.io
+      #  with:
+      #    args: >
+      #      -Dsonar.organization=${{ vars.SONAR_ORG }}
+      #      -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
 
   # TODO
   # Buscar credenciales escritas en el codigo y en el historial del repositorio.
@@ -109,12 +127,19 @@ jobs:
           echo "::error::El job 'secretos' no esta implementado."
           exit 1
 
-      # - uses: actions/checkout@v4
-      #    with:
-      #      fetch-depth: 0
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
+      #  with:
+      #    fetch-depth: 0
 
-      # ejecutar detector de secretos
-      # cualquier hallazgo BLOQUEA
+      ## TODO LAB:
+      ## Reemplazar por la herramienta de deteccion de secretos indicada.
+      ##
+      ## Cualquier hallazgo debe hacer fallar este job.
+      #- name: Detectar secretos
+      #  run: |
+      #    echo "TODO: ejecutar detector de secretos"
+      #    exit 1
 
   # TODO
   # Contrastar el arbol de dependencias declarado en package-lock.json contra
@@ -137,10 +162,28 @@ jobs:
           echo "::error::El job 'dependencias' no esta implementado."
           exit 1
 
-      # - uses: actions/checkout@v4
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
 
-      # analizar package-lock.json completo
-      # hallazgos visibles, pero NO bloquear
+      #- name: Node 20
+      #  uses: actions/setup-node@v4
+      #  with:
+      #    node-version: '20'
+      #    cache: npm
+
+      ## Se instala el arbol completo definido por package-lock.json.
+      #- name: Instalar dependencias
+      #  run: npm ci
+
+      ## TODO LAB:
+      ## Reemplazar por la herramienta de composicion indicada.
+      ## Debe analizar el arbol completo, incluidas dependencias de desarrollo.
+      ##
+      ## Este gate informa, pero no bloquea la publicacion.
+      #- name: Analizar dependencias
+      #  continue-on-error: true
+      #  run: |
+      #    echo "TODO: ejecutar analisis de composicion de dependencias"
 
   # TODO
   # Buscar patrones explotables en el codigo fuente.
@@ -157,10 +200,18 @@ jobs:
           echo "::error::El job 'estatico' no esta implementado."
           exit 1
 
-      # - uses: actions/checkout@v4
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
 
-      # análisis estático del código
-      # hallazgos visibles, pero NO bloquear
+      ## TODO LAB:
+      ## Reemplazar por la herramienta de analisis estatico indicada.
+      ## Debe buscar patrones explotables en el codigo fuente.
+      ##
+      ## Este gate informa, pero no bloquea la publicacion.
+      #- name: Analisis estatico
+      #  continue-on-error: true
+      #  run: |
+      #    echo "TODO: ejecutar analisis estatico"
 
   # TODO
   # Construir la imagen de la aplicacion y publicarla en el registro privado.
@@ -198,22 +249,100 @@ jobs:
     # if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # outputs:
-    #   digest: # resultado que luego usará desplegar
+    #   digest: ${{ steps.imagen.outputs.digest }}
     steps:
       - name: Sin implementar
         run: |
           echo "::error::El job 'publicar' no esta implementado."
           exit 1
 
-      # - uses: actions/checkout@v4
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
 
-      # credenciales AWS
-      # login ECR
-      # docker build
-      # tag
-      # push
-      # obtener digest
-      # exponer digest como output
+      ## Se cargan las credenciales temporales para acceder a ECR.
+      #- name: Credenciales temporales
+      #  uses: aws-actions/configure-aws-credentials@v4
+      #  with:
+      #    aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #    aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+      #    aws-region: us-east-1
+
+      ## Inicia sesion en el registro privado de imagenes.
+      #- name: Entrar al registro
+      #  id: registro
+      #  uses: aws-actions/amazon-ecr-login@v2
+
+      ## Se obtienen los identificadores que se utilizaran como tags.
+      #- name: Preparar identificadores
+      #  id: datos
+      #  run: |
+      #    echo "sha_corto=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+      #    echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+          ## TODO LAB:
+          ## Definir el valor del tag de ambiente segun indique el enunciado.
+          #echo "ambiente=TODO" >> "$GITHUB_OUTPUT"
+
+      ## La imagen se construye una sola vez y primero se etiqueta con el SHA.
+      #- name: Construir imagen
+      #  env:
+      #    REGISTRO: ${{ steps.registro.outputs.registry }}
+      #    SHA_CORTO: ${{ steps.datos.outputs.sha_corto }}
+      #  run: |
+      #    docker build \
+      #      --platform linux/amd64 \
+      #      --label "org.opencontainers.image.title=${APLICACION}" \
+      #      --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+      #      --tag "${REGISTRO}/${APLICACION}:${SHA_CORTO}" \
+      #      .
+
+      ## El SHA identifica de forma trazable la imagen que nace del commit.
+      #- name: Publicar imagen por SHA
+      #  env:
+      #    REGISTRO: ${{ steps.registro.outputs.registry }}
+      #    SHA_CORTO: ${{ steps.datos.outputs.sha_corto }}
+      #  run: |
+      #    docker push "${REGISTRO}/${APLICACION}:${SHA_CORTO}"
+
+      ## Se obtiene el manifiesto ya publicado para agregar los otros tags
+      ## sin volver a subir las capas de la imagen.
+      #- name: Agregar tags de version y ambiente
+      #  env:
+      #    SHA_CORTO: ${{ steps.datos.outputs.sha_corto }}
+      #    VERSION: ${{ steps.datos.outputs.version }}
+      #    AMBIENTE: ${{ steps.datos.outputs.ambiente }}
+      #  run: |
+      #    manifiesto="$(aws ecr batch-get-image \
+      #      --repository-name "$APLICACION" \
+      #      --image-ids "imageTag=${SHA_CORTO}" \
+      #      --query 'images[0].imageManifest' \
+      #      --output text)"
+
+      #    aws ecr put-image \
+      #      --repository-name "$APLICACION" \
+      #      --image-tag "$VERSION" \
+      #      --image-manifest "$manifiesto"
+
+      #    aws ecr put-image \
+      #      --repository-name "$APLICACION" \
+      #      --image-tag "$AMBIENTE" \
+      #      --image-manifest "$manifiesto"
+
+      ## Se expone la referencia completa por digest para el job desplegar.
+      #- name: Obtener digest
+      #  id: imagen
+      #  env:
+      #    REGISTRO: ${{ steps.registro.outputs.registry }}
+      #    SHA_CORTO: ${{ steps.datos.outputs.sha_corto }}
+      #  run: |
+      #    digest="$(aws ecr describe-images \
+      #      --repository-name "$APLICACION" \
+      #      --image-ids "imageTag=${SHA_CORTO}" \
+      #      --query 'imageDetails[0].imageDigest' \
+      #      --output text)"
+
+      #    echo "digest=${REGISTRO}/${APLICACION}@${digest}" >> "$GITHUB_OUTPUT"
 
   # Este job viene completo y no se modifica.
   # Las estrategias de despliegue y la verificacion posterior son contenido
