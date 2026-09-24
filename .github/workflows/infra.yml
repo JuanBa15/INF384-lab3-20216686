@@ -24,21 +24,42 @@ jobs:
   # Sustituir el paso centinela por la implementacion.
   validar:
     runs-on: ubuntu-latest
+
+    #defaults:
+    #  run:
+    #    working-directory: infra
+    
     steps:
       - name: Sin implementar
         run: |
           echo "::error::El job 'validar' no esta implementado."
           exit 1
 
-      #- uses: actions/checkout@v4
+      ## Traer el repositorio al runner
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
 
-      #- name: Formato
+      ## Terraform necesita acceder al bucket S3 donde esta el state.
+      #- name: Credenciales temporales
+      #  uses: aws-actions/configure-aws-credentials@v4
+      #  with:
+      #    aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #    aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+      #    aws-region: us-east-1
+
+      ## Verifica que los .tf tengan el formato esperado.
+      ## -check hace que falle en vez de modificar los archivos.
+      #- name: Comprobar formato
       #  run: terraform fmt -check
-  
-      #- name: Inicializar
+
+      ## Inicializa Terraform y conecta con el backend remoto definido
+      ## mediante backend.hcl.
+      #- name: Inicializar Terraform
       #  run: terraform init -backend-config=backend.hcl
-  
-      #- name: Validar
+
+      ## Comprueba sintaxis y consistencia de la configuracion Terraform.
+      #- name: Validar configuracion
       #  run: terraform validate              
 
   # TODO
@@ -70,10 +91,24 @@ jobs:
           echo "::error::El job 'politicas' no esta implementado."
           exit 1
 
-      #- checkout
-      #- análisis IaC
-      #- bloquear HIGH/CRITICAL
-      #- respetar excepciones válidas
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
+
+      ## TODO LAB:
+      ## Aqui debe ir la herramienta/action de analisis de IaC
+      ## indicada o permitida por el enunciado.
+      ##
+      ## Debe:
+      ## - analizar infra/
+      ## - detectar hallazgos HIGH/CRITICAL
+      ## - bloquear por HIGH/CRITICAL
+      ## - respetar las excepciones correctamente documentadas
+      ## - considerar la fecha de vencimiento de la excepcion
+
+      #- name: Analisis de politicas IaC
+      #  run: |
+      #    echo "TODO: reemplazar por la herramienta de politicas indicada en el laboratorio"
+      #    exit 1
 
   # TODO
   # Calcular el plan, guardarlo en disco y exportarlo a tfplan.json.
@@ -105,25 +140,85 @@ jobs:
   plan:
     needs: [validar, politicas]
     runs-on: ubuntu-latest
+
+    #defaults:
+    #  run:
+    #    working-directory: infra
+    
     steps:
       - name: Sin implementar
         run: |
           echo "::error::El job 'plan' no esta implementado."
           exit 1
 
-      #- checkout
-      #- terraform init
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
 
-      #- terraform plan -out=tfplan
+      #- name: Credenciales temporales
+      #  uses: aws-actions/configure-aws-credentials@v4
+      #  with:
+      #    aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #    aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+      #    aws-region: us-east-1
 
-      #- terraform show -json tfplan > tfplan.json
+      ## Cada runner es una maquina nueva, asi que Terraform debe
+      ## inicializarse tambien en este job.
+      #- name: Inicializar Terraform
+      #  run: terraform init -backend-config=backend.hcl
 
-      #- publicar plan legible en PR
+      ## Genera el plan y lo guarda en un archivo.
+      ## Todavia NO modifica AWS.
+      #- name: Calcular plan
+      #  run: terraform plan -out=tfplan
 
-      #- revisar tfplan.json
-      #- bloquear destrucciones no autorizadas
+      ## Version legible para personas.
+      #- name: Exportar plan legible
+      #  run: terraform show -no-color tfplan > tfplan.txt
 
-      #- guardar tfplan
+      ## Version JSON para que un script pueda analizar las acciones.
+      #- name: Exportar plan como JSON
+      #  run: terraform show -json tfplan > tfplan.json
+
+      ## Regla del laboratorio:
+      ## detectar cualquier resource_change cuya lista de acciones
+      ## incluya "delete".
+      ##
+      ## IMPORTANTE:
+      ## todavia falta definir el mecanismo exacto de autorizacion
+      ## humana indicado por el laboratorio.
+      #- name: Detectar destrucciones
+      #  run: |
+      #    destrucciones=$(jq '
+      #      [
+      #        .resource_changes[]
+      #        | select(.change.actions | index("delete"))
+      #      ]
+      #      | length
+      #    ' tfplan.json)
+
+      #    echo "Recursos con accion delete: $destrucciones"
+
+      #    if [ "$destrucciones" -gt 0 ]; then
+      #      echo "::error::El plan contiene acciones de destruccion."
+      #      echo "TODO: comprobar aqui la autorizacion humana definida por el laboratorio."
+      #      exit 1
+      #    fi
+
+      ## El enunciado pide que el plan sea visible en el Pull Request.
+      ## Falta elegir la action/mecanismo exacto que indique el laboratorio.
+      #- name: Publicar plan en Pull Request
+      #  if: github.event_name == 'pull_request'
+      #  run: |
+      #    echo "TODO: publicar infra/tfplan.txt como comentario del Pull Request"
+
+      ## Guardamos EL MISMO plan para que el job aplicar pueda consumirlo.
+      #- name: Guardar plan
+      #  uses: actions/upload-artifact@v4
+      #  with:
+      #    name: terraform-plan
+      #    path: infra/tfplan
+      #    if-no-files-found: error
 
   # TODO
   # Aplicar el plan que produjo el job anterior, sin recalcularlo.
@@ -134,14 +229,40 @@ jobs:
     needs: plan
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+
+    #defaults:
+    #  run:
+    #    working-directory: infra
+    
     steps:
       - name: Sin implementar
         run: |
           echo "::error::El job 'aplicar' no esta implementado."
           exit 1
 
-      #- descargar tfplan
+      #- name: Descargar el codigo
+      #  uses: actions/checkout@v4
 
-      #- terraform init
+      #- name: Credenciales temporales
+      #  uses: aws-actions/configure-aws-credentials@v4
+      #  with:
+      #    aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #    aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #    aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
+      #    aws-region: us-east-1
 
-      #- terraform apply tfplan
+      ## Recuperamos el plan generado por el job anterior.
+      #- name: Descargar plan
+      #  uses: actions/download-artifact@v4
+      #  with:
+      #    name: terraform-plan
+      #    path: infra
+
+      ## Terraform vuelve a inicializarse porque estamos en otro runner.
+      #- name: Inicializar Terraform
+      #  run: terraform init -backend-config=backend.hcl
+
+      ## IMPORTANTE:
+      ## se aplica tfplan; NO se ejecuta nuevamente terraform plan.
+      #- name: Aplicar plan
+      #  run: terraform apply -auto-approve tfplan
