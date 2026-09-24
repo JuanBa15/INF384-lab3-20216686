@@ -30,6 +30,17 @@ jobs:
           echo "::error::El job 'validar' no esta implementado."
           exit 1
 
+      #- uses: actions/checkout@v4
+
+      #- name: Formato
+      #  run: terraform fmt -check
+  
+      #- name: Inicializar
+      #  run: terraform init -backend-config=backend.hcl
+  
+      #- name: Validar
+      #  run: terraform validate              
+
   # TODO
   # Analizar el codigo declarado contra politicas de infraestructura.
   #
